@@ -1,0 +1,32 @@
+#pragma kernel CSMain
+
+float newHeight;
+float terrainSize;
+float2 terrainPosition;
+Texture2D BiomeMap;
+Texture2D DerivMap;
+SamplerState bm_linear_clamp_sampler;
+SamplerState dm_linear_clamp_sampler;
+
+RWTexture2D<float4> BaseHeightmap;
+
+#include "noises.cginc"
+#include "noiseParams.cginc"
+#include "heightSampling.cginc"
+
+RWStructuredBuffer<float> Result;
+
+[numthreads(10,5,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int i = id.x + (499 - id.y) * 1000;
+
+    float extraHeight, bumps;
+    float baseHeight = GetBaseHeight(float2(id.xy), extraHeight, bumps, false);
+
+    float extraHeightComp = 1.0 - 100.0 / newHeight;
+
+    float h = saturate(baseHeight + extraHeight * extraHeightComp);
+    Result[i] = h;
+    BaseHeightmap[id.xy] = h.xxxx;
+}
