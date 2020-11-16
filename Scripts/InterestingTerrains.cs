@@ -1,24 +1,29 @@
-using DaggerfallConnect.Utility;
 using DaggerfallWorkshop;
 using DaggerfallWorkshop.Game;
 using DaggerfallWorkshop.Game.Utility.ModSupport;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using Monobelisk.Compatibility;
 
 namespace Monobelisk
 {
     public class InterestingTerrains : MonoBehaviour
     {
-        public static readonly Dictionary<string, byte[]> tileDataStorage = new Dictionary<string, byte[]>();
+        public static readonly TileDataCache tileDataCache = new TileDataCache();
 
         public static InterestingTerrains instance;
-
-        #region Invoke
         public static Mod Mod { get; private set; }
 
+        public static Settings settings = new Settings();
+        public TerrainComputerParams csParams;
+        public static Texture2D biomeMap;
+        public static Texture2D derivMap;
+        public static Texture2D tileableNoise;
+        public static ComputeShader csPrototype;
+        public static ComputeShader mainHeightComputer;
+        public static ComputeShader mainHeightSmoother;
+
+        #region Invoke
         [Invoke(StateManager.StateTypes.Start, 0)]
         public static void Init(InitParams initParams)
         {
@@ -29,9 +34,6 @@ namespace Monobelisk
             GameManager.Instance.StreamingWorld.TerrainScale = 1f;
 
             LoadAssetsAndParams();
-
-            DaggerfallUnity.Instance.TerrainSampler = new InterestingTerrainSampler();
-            DaggerfallUnity.Instance.TerrainTexturing = new InterestingTerrainTexturer();
 
             ModMessageHandler.Init();
 
@@ -45,8 +47,10 @@ namespace Monobelisk
 
             biomeMap = Mod.GetAsset<Texture2D>("daggerfall_heightmap");
             derivMap = Mod.GetAsset<Texture2D>("daggerfall_deriv_map");
+            tileableNoise = Mod.GetAsset<Texture2D>("tileable_noise");
             csPrototype = Mod.GetAsset<ComputeShader>("TerrainComputer");
             mainHeightComputer = Mod.GetAsset<ComputeShader>("MainHeightmapComputer");
+            mainHeightSmoother = Mod.GetAsset<ComputeShader>("MainHeightmapSmoother");
 
 #if UNITY_EDITOR
             instance.csParams = ScriptableObject.CreateInstance<TerrainComputerParams>();
@@ -61,41 +65,28 @@ namespace Monobelisk
         }
         #endregion
 
-        public static Settings settings = new Settings();
-        public TerrainComputerParams csParams;
-
-        public static Texture2D biomeMap;
-        public static Texture2D derivMap;
-        public static ComputeShader csPrototype;
-        public static ComputeShader mainHeightComputer;
-
         private void Awake()
         {
+            DaggerfallUnity.Instance.TerrainSampler = new InterestingTerrainSampler();
+
+            if (!CompatibilityUtils.BasicRoadsLoaded)
+                DaggerfallUnity.Instance.TerrainTexturing = new InterestingTerrainTexturer();
+
+            DaggerfallTerrain.OnPromoteTerrainData += tileDataCache.UncacheTileData;
+
             Mod.IsReady = true;
             Camera.main.farClipPlane = 10000f;
         }
 
+        private void Start()
+        {
+            if (CompatibilityUtils.BasicRoadsLoaded)
+                BasicRoadsUtils.Init();
+        }
 
         private void OnDestroy()
         {
             TerrainComputer.Cleanup();
-        }
-
-        public static byte[] GetTileData(int mapPixelX, int mapPixelY)
-        {
-            var pos = new DFPosition(mapPixelX, mapPixelY).ToString().Trim();
-
-            if (tileDataStorage.ContainsKey(pos))
-            {
-                var td = tileDataStorage[pos];
-                tileDataStorage.Remove(pos);
-
-                return td;
-            }
-
-            Debug.LogWarning("==> Interesting Terrains: No tileData found for map pixel " + mapPixelX + "x" + mapPixelY);
-
-            return null;
         }
 
         public IEnumerator ClearNoonRoutine()

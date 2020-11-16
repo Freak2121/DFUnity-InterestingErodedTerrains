@@ -114,43 +114,57 @@ float SampleBaseHeight(int index) {
 }
 
 BiomeWeights GetBiomeWeights(float2 worldUv, int2 id = 0, bool detailedHeights = true, bool smallerBase = false) {
-    float heightmapMaxIndex = terrainSize - 1;
-    float2 tileUv = id.xy / heightmapMaxIndex;
-    float2 pos = worldUv * terrainSize * float2(TERRAIN_X, TERRAIN_Y);
+    //float heightmapMaxIndex = terrainSize - 1;
+    //float2 tileUv = id.xy / heightmapMaxIndex;
+    float2 pos = worldUv * (terrainSize * float2(TERRAIN_X, TERRAIN_Y));
 
-    worldUv.x += 0.5 / TERRAIN_X;
-    worldUv.y += 0.5 / TERRAIN_Y;
+    //worldUv.x -= 3.0 / TERRAIN_X;
+    //worldUv.y -= 1.0 / TERRAIN_Y;
 
-    float4 tex = BiomeMap.SampleLevel(bm_linear_clamp_sampler, worldUv, 0);
+    float sampleLevel = 0;
+    SamplerState ss = bm_linear_clamp_sampler;
+
+    if (!detailedHeights) {
+        //worldUv += float(0.5).xx / float2(TERRAIN_X, TERRAIN_Y);
+        pos = float2(id) * 129.0;
+        //ss = bm_point_clamp_sampler; 
+    }
+
+    float4 tex = BiomeMap.SampleLevel(ss, worldUv, sampleLevel);
 
     id.x = min(id.x, terrainSize - 1);
 
     int index = Idx(id.x, id.y, terrainSize);
     float baseHeight = SampleBaseHeight(index);
 
-    float3 dTex = DerivMap.SampleLevel(dm_linear_clamp_sampler, worldUv, 0).rgb;
+    float3 dTex = DerivMap.SampleLevel(ss, worldUv, sampleLevel).rgb;
     tex.r = smoothstep(0, 1, tex.r);
 
-    PerlinParams hillBaseParams = HillBase(pos);
-    float hillBase = SimplePerlin(hillBaseParams);
-    hillBase = saturate(hillBase * 0.5 + 0.5);
-    hillBase = pow(hillBase, 3);
+    float loResBaseHeight = (dTex.b * 255.0) * (baseHeightScale + noiseMapScale);
+    loResBaseHeight = saturate((loResBaseHeight - scaledOceanElevation) / maxTerrainHeight);
 
-    SwissParams mountainBaseParams = MountainBase(pos);
-    float mountainBase = MountainBaseNoise(mountainBaseParams);
+    float loHiFade = 100.0 / maxTerrainHeight;
+    float loHiThres = 1.5 / maxTerrainHeight;
+    baseHeight = lerp(baseHeight, loResBaseHeight, saturate((baseHeight - loHiThres) / loHiFade));
+
+    //PerlinParams hillBaseParams = HillBase(pos);
+    //float hillBase = SimplePerlin(hillBaseParams);
+    //hillBase = saturate(hillBase * 0.5 + 0.5);
+    //hillBase = pow(hillBase, 3);
+
+    //SwissParams mountainBaseParams = MountainBase(pos);
+    //float mountainBase = MountainBaseNoise(mountainBaseParams);
 
     BiomeWeights w;
 
-    w.mountain = saturate(max(tex.r, mountainBase * 0.25));
+    w.mountain = tex.r;// saturate(max(tex.r, mountainBase * 0.25));
     w.mountainBase = tex.r;
     w.desert = tex.g;
-    w.hills = max(tex.b, hillBase * 0.5);
+    w.hills = tex.b;// max(tex.b, hillBase * 0.5);
     w.land = baseHeight;
 
     if (!detailedHeights) {
-        w.land = dTex.b * 255.0;
-        w.land *= (baseHeightScale + noiseMapScale);
-        w.land = (w.land - scaledOceanElevation) / maxTerrainHeight;
+        w.land = loResBaseHeight;
     }
 
     w.deriv = normalize(float3(dTex.r, dTex.g, 1)).rg;
@@ -173,7 +187,7 @@ float GetBaseHeight(float2 id, out float extraHeight, out float bumps, bool deta
 
     if (!detailedHeights) {
         pos = id * 129.0;
-        worldUv = tileUv;
+        worldUv = float2(id) / float2(TERRAIN_X, TERRAIN_Y);
     }
 
     BiomeWeights w = GetBiomeWeights(worldUv, int2(id), detailedHeights && detailedBasemap, !detailedBasemap);
@@ -209,7 +223,7 @@ float GetBaseHeight(float2 id, out float extraHeight, out float bumps, bool deta
     float baseHeightMax = lerp(bhm, BASEHEIGHT_HILL, w.hills);
     baseHeightMax = lerp(baseHeightMax, BASEHEIGHT_MNT, w.mountain);
 
-    float baseHeightMin = BASEHEIGHT_MIN - 2;
+    float baseHeightMin = BASEHEIGHT_MIN - 1;
 
     float baseHeight = lerp(baseHeightMin / newHeight, baseHeightMax / newHeight, w.land);
 

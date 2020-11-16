@@ -64,8 +64,8 @@ namespace Monobelisk
             var tileData = tilemapInts.Select(v => AsByte(v)).ToArray();
 
             // Add to internal tileData storage for use in TerrainTexturer
-            var pos = new DFPosition(mapData.mapPixelX, mapData.mapPixelY).ToString().Trim();
-            InterestingTerrains.tileDataStorage.Add(pos, tileData);
+            var pos = new DFPosition(mapData.mapPixelX, mapData.mapPixelY);
+            InterestingTerrains.tileDataCache.Add(pos, tileData);
 
             // Cleanup
             buffers.Dispose();

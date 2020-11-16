@@ -55,7 +55,7 @@ namespace Monobelisk
             var mpx = Mathf.Clamp(mapPixelPos[0], 0, 999);
             var mpy = Mathf.Clamp(mapPixelPos[1], 0, 499);
 
-            var tileData = InterestingTerrains.GetTileData(mpx, mpy);
+            var tileData = InterestingTerrains.tileDataCache.Get(mpx, mpy);
 
             if (tileData == null)
             {

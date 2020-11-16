@@ -27,6 +27,7 @@ namespace Monobelisk
         public static byte[] alteredHeightmapBuffer;
         public static ComputeBuffer locationHeightData = new ComputeBuffer(289, sizeof(float) * 3);
         public static RenderTexture mapPixelHeights;
+        public static RenderTexture smoothMapPixelHeights;
 
         public Vector2 terrainPosition;
         public Vector2 terrainSize;
@@ -78,9 +79,20 @@ namespace Monobelisk
             {
                 enableRandomWrite = true,
                 filterMode = FilterMode.Point,
-                isPowerOfTwo = false
+                isPowerOfTwo = false,
+                useMipMap = false,
+                //autoGenerateMips = false,
             };
             mapPixelHeights.Create();
+
+            smoothMapPixelHeights = new RenderTexture(1000, 500, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear)
+            {
+                enableRandomWrite = true,
+                filterMode = FilterMode.Bilinear,
+                isPowerOfTwo = false,
+                useMipMap = false,
+            };
+            smoothMapPixelHeights.Create();
 
             var cs = UnityEngine.Object.Instantiate(InterestingTerrains.mainHeightComputer);
             var k = cs.FindKernel("CSMain");
@@ -100,6 +112,16 @@ namespace Monobelisk
             InterestingTerrains.instance.csParams.ApplyToCS(cs);
 
             cs.Dispatch(k, WoodsFile.MapWidth / 10, WoodsFile.MapHeight / 5, 1);
+
+            cs = UnityEngine.Object.Instantiate(InterestingTerrains.mainHeightSmoother);
+            k = cs.FindKernel("CSMain");
+
+            cs.SetTexture(k, "BaseHeightmap", mapPixelHeights);
+            cs.SetTexture(k, "SmoothedHeightmap", smoothMapPixelHeights);
+
+            cs.Dispatch(k, WoodsFile.MapWidth / 10, WoodsFile.MapHeight / 5, 1);
+
+            //mapPixelHeights.GenerateMips();
 
             var floatHeights = new float[original.Length];
             alteredHeights.GetData(floatHeights);
@@ -190,6 +212,7 @@ namespace Monobelisk
             cs.SetInt("locationCount", locations.Count);
             cs.SetTexture(k, "BiomeMap", InterestingTerrains.biomeMap);
             cs.SetTexture(k, "DerivMap", InterestingTerrains.derivMap);
+            cs.SetTexture(k, "tileableNoise", InterestingTerrains.tileableNoise);
             cs.SetFloat("originalHeight", Utility.GetOriginalTerrainHeight());
             cs.SetFloat("newHeight", Constants.TERRAIN_HEIGHT);
             cs.SetTexture(k, "mapPixelHeights", mapPixelHeights);
@@ -197,6 +220,10 @@ namespace Monobelisk
             cs.SetBuffer(k, "rawNoise", heightmapBuffers.rawNoise);
             cs.SetBuffer(k, "locationHeightData", locationHeightData);
             cs.SetVector("worldSize", Utility.GetWorldVertexSize());
+
+            var rd = Compatibility.BasicRoadsUtils.GetRoadData(mapData.mapPixelX, mapData.mapPixelY);
+            cs.SetVectorArray("NW_NE_SW_SE", rd.NW_NE_SW_SE);
+            cs.SetVectorArray("N_E_S_W", rd.N_E_S_W);
 
             csParams.ApplyToCS(cs);
 
