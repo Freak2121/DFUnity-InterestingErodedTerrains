@@ -26,8 +26,7 @@ namespace Monobelisk
         public static byte[] originalHeightmapBuffer;
         public static byte[] alteredHeightmapBuffer;
         public static ComputeBuffer locationHeightData = new ComputeBuffer(289, sizeof(float) * 3);
-        public static RenderTexture mapPixelHeights;
-        public static RenderTexture smoothMapPixelHeights;
+        public static Texture2D baseHeightmap;
 
         public Vector2 terrainPosition;
         public Vector2 terrainSize;
@@ -75,24 +74,6 @@ namespace Monobelisk
             }
 
             var alteredHeights = new ComputeBuffer(original.Length, sizeof(float));
-            mapPixelHeights = new RenderTexture(1000, 500, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear)
-            {
-                enableRandomWrite = true,
-                filterMode = FilterMode.Point,
-                isPowerOfTwo = false,
-                useMipMap = false,
-                //autoGenerateMips = false,
-            };
-            mapPixelHeights.Create();
-
-            smoothMapPixelHeights = new RenderTexture(1000, 500, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear)
-            {
-                enableRandomWrite = true,
-                filterMode = FilterMode.Bilinear,
-                isPowerOfTwo = false,
-                useMipMap = false,
-            };
-            smoothMapPixelHeights.Create();
 
             var cs = UnityEngine.Object.Instantiate(InterestingTerrains.mainHeightComputer);
             var k = cs.FindKernel("CSMain");
@@ -107,27 +88,20 @@ namespace Monobelisk
             cs.SetVector("terrainPosition", Vector2.zero);
             cs.SetTexture(k, "BiomeMap", InterestingTerrains.biomeMap);
             cs.SetTexture(k, "DerivMap", InterestingTerrains.derivMap);
-            cs.SetTexture(k, "BaseHeightmap", mapPixelHeights);
             cs.SetBuffer(k, "Result", alteredHeights);
             InterestingTerrains.instance.csParams.ApplyToCS(cs);
 
             cs.Dispatch(k, WoodsFile.MapWidth / 10, WoodsFile.MapHeight / 5, 1);
-
-            cs = UnityEngine.Object.Instantiate(InterestingTerrains.mainHeightSmoother);
-            k = cs.FindKernel("CSMain");
-
-            cs.SetTexture(k, "BaseHeightmap", mapPixelHeights);
-            cs.SetTexture(k, "SmoothedHeightmap", smoothMapPixelHeights);
-
-            cs.Dispatch(k, WoodsFile.MapWidth / 10, WoodsFile.MapHeight / 5, 1);
-
-            //mapPixelHeights.GenerateMips();
 
             var floatHeights = new float[original.Length];
             alteredHeights.GetData(floatHeights);
 
             alteredHeightmapBuffer = Utility.ToBytes(floatHeights);
             woodsFile.Buffer = alteredHeightmapBuffer;
+
+            baseHeightmap = new Texture2D(WoodsFile.MapWidth, WoodsFile.MapHeight);
+            baseHeightmap.SetPixels32(ToBasemap(alteredHeightmapBuffer));
+            baseHeightmap.Apply();
 
             alteredHeights.Release();
             alteredHeights.Dispose();
@@ -137,7 +111,6 @@ namespace Monobelisk
         {
             locationHeightData.Release();
             locationHeightData.Dispose();
-            mapPixelHeights.Release();
         }
 
         /// <summary>
@@ -215,7 +188,7 @@ namespace Monobelisk
             cs.SetTexture(k, "tileableNoise", InterestingTerrains.tileableNoise);
             cs.SetFloat("originalHeight", Utility.GetOriginalTerrainHeight());
             cs.SetFloat("newHeight", Constants.TERRAIN_HEIGHT);
-            cs.SetTexture(k, "mapPixelHeights", mapPixelHeights);
+            cs.SetTexture(k, "mapPixelHeights", baseHeightmap);
             cs.SetBuffer(k, "heightmapBuffer", heightmapBuffers.heightmapBuffer);
             cs.SetBuffer(k, "rawNoise", heightmapBuffers.rawNoise);
             cs.SetBuffer(k, "locationHeightData", locationHeightData);
@@ -243,6 +216,25 @@ namespace Monobelisk
             cs.Dispatch(k, res / x, res / y, 1);
 
             BufferIO.ProcessBufferValuesAndDispose(heightmapBuffers, ref mapData);
+        }
+
+        private static Color32[] ToBasemap(byte[] heightBuffer)
+        {
+            var basemap = new Color32[heightBuffer.Length];
+
+            for (int x = 0; x < WoodsFile.MapWidth; x++)
+            {
+                for(int y = 0; y < WoodsFile.MapHeight; y++)
+                {
+                    var idx = x + y * WoodsFile.MapWidth;
+                    var sampleIdx = x + (WoodsFile.MapHeight - 1 - y) * WoodsFile.MapWidth;
+
+                    var b = heightBuffer[sampleIdx];
+                    basemap[idx] = new Color32(b, b, b, 255);
+                }
+            }
+
+            return basemap;
         }
 
         void HandleBaseMapSampleParams(ref MapPixelData mapPixel, ref ComputeShader cs, int k)

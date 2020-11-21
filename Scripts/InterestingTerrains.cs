@@ -21,7 +21,6 @@ namespace Monobelisk
         public static Texture2D tileableNoise;
         public static ComputeShader csPrototype;
         public static ComputeShader mainHeightComputer;
-        public static ComputeShader mainHeightSmoother;
 
         #region Invoke
         [Invoke(StateManager.StateTypes.Start, 0)]
@@ -50,7 +49,6 @@ namespace Monobelisk
             tileableNoise = Mod.GetAsset<Texture2D>("tileable_noise");
             csPrototype = Mod.GetAsset<ComputeShader>("TerrainComputer");
             mainHeightComputer = Mod.GetAsset<ComputeShader>("MainHeightmapComputer");
-            mainHeightSmoother = Mod.GetAsset<ComputeShader>("MainHeightmapSmoother");
 
 #if UNITY_EDITOR
             instance.csParams = ScriptableObject.CreateInstance<TerrainComputerParams>();

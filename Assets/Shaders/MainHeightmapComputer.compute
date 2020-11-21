@@ -9,8 +9,6 @@ SamplerState bm_linear_clamp_sampler;
 SamplerState bm_point_clamp_sampler;
 SamplerState dm_linear_clamp_sampler;
 
-RWTexture2D<float4> BaseHeightmap;
-
 #include "noises.cginc"
 #include "noiseParams.cginc"
 #include "heightSampling.cginc"
@@ -29,5 +27,4 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     float h = saturate(baseHeight + extraHeight);
     Result[i] = h;
-    BaseHeightmap[id.xy] = h.xxxx;
 }
