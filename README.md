@@ -1,3 +1,10 @@
+This is a modification of Interesting Terrains by Monobelisk, intended to work in tandem with Enhanced and Eroded Terrains.
+
+https://www.nexusmods.com/daggerfallunity/mods/166/
+https://github.com/Freak2121/Enhanced-ErodedTerrains
+
+Original readme:
+
 # Interesting Terrains
 ![Screenshot of Interesting Terrains](https://staticdelivery.nexusmods.com/mods/2927/images/headers/115_1600006224.jpg "Interesting Terrains")
 
