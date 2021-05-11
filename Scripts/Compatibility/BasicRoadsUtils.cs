@@ -90,11 +90,11 @@ namespace Monobelisk.Compatibility
         {
             var hasRoadPoint = false;
 
-            if ((pathsData[roads][i] & direction) != 0)
+            /*if ((pathsData[roads][i] & direction) != 0)
                 hasRoadPoint = true;
             if ((pathsData[tracks][i] & direction) != 0)
                 hasRoadPoint = true;
-            /*if (pathsData[rivers][i] % direction != 0)
+            if (pathsData[rivers][i] % direction != 0)
                 hasRoadPoint = true;
             if (pathsData[streams][i] % direction != 0)
                 hasRoadPoint = true;*/
