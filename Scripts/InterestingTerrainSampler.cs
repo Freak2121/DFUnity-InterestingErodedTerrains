@@ -10,8 +10,8 @@ namespace Monobelisk
             HeightmapDimension = defaultHeightmapDimension;
             MaxTerrainHeight = 5000f;
             MeanTerrainHeightScale = 5000f / 255f;
-            OceanElevation = 98f;
-            BeachElevation = 112.8f;
+            OceanElevation = 100.01f;
+            BeachElevation = 112.9f;
         }
 
         public override int Version
