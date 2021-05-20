@@ -1,6 +1,6 @@
 {
     "ModTitle": "Interesting Terrains",
-    "ModVersion": "0.5.2",
+    "ModVersion": "0.6",
     "ModAuthor": "monobelisk",
     "DFUnity_Version": "0.10.27",
     "ModDescription": "Adds generated natural looking mountains, hills, canyons and dunes to the original terrain.",
@@ -41,5 +41,13 @@
         "Assets/Game/Mods/InterestingTerrains/Scripts/Models/Noise Params/JordanTurbulence.cs",
         "Assets/Game/Mods/InterestingTerrains/Scripts/Models/Noise Params/Perlin.cs",
         "Assets/Game/Mods/InterestingTerrains/Scripts/Models/Noise Params/SwissTurbulence.cs"
+    ],
+    "Dependencies": [
+        {
+            "Name": "basicroads",
+            "IsOptional": true,
+            "IsPeer": false,
+            "Version": "1.0.0"
+        }
     ]
 }
