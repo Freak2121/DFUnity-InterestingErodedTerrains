@@ -67,8 +67,7 @@ namespace Monobelisk
         {
             DaggerfallUnity.Instance.TerrainSampler = new InterestingTerrainSampler();
 
-            if (!CompatibilityUtils.BasicRoadsLoaded)
-                DaggerfallUnity.Instance.TerrainTexturing = new InterestingTerrainTexturer();
+            DaggerfallUnity.Instance.TerrainTexturing = new InterestingTerrainTexturer();
 
             DaggerfallTerrain.OnPromoteTerrainData += tileDataCache.UncacheTileData;
 
