@@ -1,8 +1,8 @@
 {
     "ModTitle": "Interesting Eroded Terrains",
-    "ModVersion": "1.1",
+    "ModVersion": "1.3",
     "ModAuthor": "monobelisk & Freak2121",
-    "DFUnity_Version": "0.11.4",
+    "DFUnity_Version": "0.13.1",
     "ModDescription": "Adds generated natural looking mountains, hills, canyons and dunes to the original terrain.",
     "GUID": "45339f97-bcef-437c-a270-363a70993dc5",
     "Files": [
