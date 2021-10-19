@@ -99,7 +99,7 @@ namespace Monobelisk
             alteredHeightmapBuffer = Utility.ToBytes(floatHeights);
             woodsFile.Buffer = alteredHeightmapBuffer;
 
-            baseHeightmap = new Texture2D(WoodsFile.MapWidth, WoodsFile.MapHeight);
+            baseHeightmap = new Texture2D(WoodsFile.MapWidth, WoodsFile.MapHeight, TextureFormat.ARGB32, false, true);
             baseHeightmap.SetPixels32(ToBasemap(alteredHeightmapBuffer));
             baseHeightmap.Apply();
 
